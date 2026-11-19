@@ -16,6 +16,7 @@ class url_scheme(Enum):
 url_scheme = url_scheme()
 """
 URL_SCHEME = ("http", "https")
+TIMEOUT = 30
 
 def main() -> int:
     address = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -47,9 +48,20 @@ def main() -> int:
 
 def download_once(address: str) -> tuple[int, float]:
     started_at = perf_counter()
+    downloaded_bytes = 0
 
-    with urlopen(address, timeout=30) as response:
-        downloaded_bytes = len(response.read())
+    with urlopen(address, timeout=TIMEOUT) as response:
+        while True:
+            chunk = response.read(64 * 1024)
+            if not chunk:
+                break
+            downloaded_bytes += len(chunk)
+
+        content_length = response.headers.get("Content-Length")
+        if content_length and content_length.isdecimal():
+            if downloaded_bytes != int(content_length):
+                raise OSError("Ответ получен не полностью.")
+
         return downloaded_bytes, perf_counter() - started_at
 
 raise SystemExit(main())
