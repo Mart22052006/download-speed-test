@@ -1,11 +1,24 @@
 import sys
 from collections.abc import Callable
-from dataclasses import dataclass
 from urllib.parse import urlsplit
 from loguru import logger
 from enum import Enum
 from http.client import IncompleteRead
 from urllib.error import HTTPError
+from models import DownloadMeasurement, DownloadSummary
+from messages import (
+        DOWNLOAD_ERROR_MESSAGE,
+        INVALID_MEASUREMENT_TIME_MESSAGE,
+        INCOMPLETE_RESPONSE_MESSAGE,
+        DOWNLOAD_PROGRESS_MESSAGE,
+        TOTAL_BYTES_MESSAGE,
+        AVERAGE_TIME_MESSAGE,
+        DOWNLOAD_SPEED_MESSAGE,
+        
+        INVALID_URL_MESSAGE,
+        MISSING_HOST_MESSAGE,
+        UNSUPPORTED_SCHEME_MESSAGE,
+)
 from urllib.request import urlopen
 from time import perf_counter
 
@@ -22,20 +35,9 @@ URL_SCHEME = ("http", "https")
 TIMEOUT = 30
 REQUEST_COUNT = 10
 
-@dataclass(frozen=True)
-class DownloadMeasurement:
-    downloaded_bytes: int
-    elapsed_seconds: float
+
 
 Downloader = Callable[[str], DownloadMeasurement]
-
-
-@dataclass(frozen=True)
-class DownloadSummary:
-    total_bytes: int
-    average_ms: float
-    speed_mbps: float
-
 
 def main() -> int:
     address = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -45,7 +47,7 @@ def main() -> int:
     try:
         summary = measure_downloads(address, download_and_log)
     except (OSError, IncompleteRead, ValueError) as error:
-        logger.error("Ошибка скачивания — {}", error)
+        logger.error(DOWNLOAD_ERROR_MESSAGE, error)
         return 1
 
     log_summary(summary)
@@ -53,9 +55,9 @@ def main() -> int:
 
 
 def log_summary(summary: DownloadSummary) -> None:
-    logger.info("Общий объём — {} байт", summary.total_bytes)
-    logger.info("Среднее время запроса — {:.2f} мс", summary.average_ms)
-    logger.info("Скорость скачивания — {:.2f} Мбит/с", summary.speed_mbps)
+    logger.info(TOTAL_BYTES_MESSAGE, summary.total_bytes)
+    logger.info(AVERAGE_TIME_MESSAGE, summary.average_ms)
+    logger.info(DOWNLOAD_SPEED_MESSAGE, summary.speed_mbps)
 
 def validate_address(address: str) -> bool:
     try:
@@ -64,15 +66,18 @@ def validate_address(address: str) -> bool:
         url = None
     
     if url is None:
-        logger.error("Не удалось разобрать URL.")
+        logger.error(INVALID_URL_MESSAGE)
         return False
-    
+
+
+
+
     if url.scheme not in URL_SCHEME:
-        logger.error("Допустимы только схемы HTTP и HTTPS.")
+        logger.error(UNSUPPORTED_SCHEME_MESSAGE)
         return False
 
     if not url.hostname:
-        logger.error("В URL отсутствует имя хоста.")
+        logger.error(MISSING_HOST_MESSAGE)
         return False
     
     return True
@@ -87,7 +92,7 @@ def measure_downloads(address: str, download: Downloader) -> DownloadSummary:
         total_seconds += measurement.elapsed_seconds
 
     if total_seconds <= 0:
-        raise ValueError("Суммарное время замера должно быть положительным.")
+        raise ValueError(INVALID_MEASUREMENT_TIME_MESSAGE)
 
     average_ms = total_seconds * 1000 / REQUEST_COUNT
     speed_mbps = total_bytes * 8 / total_seconds / 1_000_000
@@ -96,7 +101,7 @@ def measure_downloads(address: str, download: Downloader) -> DownloadSummary:
 def download_and_log(address: str) -> DownloadMeasurement:
     measurement = download_once(address)
     logger.info(
-        "Скачано {} байт за {:.3f} с",
+        DOWNLOAD_PROGRESS_MESSAGE,
         measurement.downloaded_bytes,
         measurement.elapsed_seconds,
     )
@@ -123,7 +128,7 @@ def download_once(address: str) -> DownloadMeasurement:
         content_length = response.headers.get("Content-Length")
         if content_length and content_length.isdecimal():
             if downloaded_bytes != int(content_length):
-                raise OSError("Ответ получен не полностью.")
+                raise OSError(INCOMPLETE_RESPONSE_MESSAGE)
 
         return DownloadMeasurement(
             downloaded_bytes=downloaded_bytes,

@@ -1,0 +1,7 @@
+DOWNLOAD_ERROR_MESSAGE = "Ошибка скачивания — {}"
+INVALID_MEASUREMENT_TIME_MESSAGE = "Суммарное время замера должно быть положительным."
+INCOMPLETE_RESPONSE_MESSAGE = "Ответ получен не полностью."
+DOWNLOAD_PROGRESS_MESSAGE = "Скачано {} байт за {:.3f} с"
+TOTAL_BYTES_MESSAGE = "Общий объём — {} байт"
+AVERAGE_TIME_MESSAGE = "Среднее время запроса — {:.2f} мс"
+DOWNLOAD_SPEED_MESSAGE = "Скорость скачивания — {:.2f} Мбит/с"
