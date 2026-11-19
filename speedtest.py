@@ -27,7 +27,7 @@ class DownloadMeasurement:
     downloaded_bytes: int
     elapsed_seconds: float
 
-Downloader = Callable[[str], tuple[int, float]]
+Downloader = Callable[[str], DownloadMeasurement]
 
 
 @dataclass(frozen=True)
@@ -93,19 +93,17 @@ def measure_downloads(address: str, download: Downloader) -> DownloadSummary:
     speed_mbps = total_bytes * 8 / total_seconds / 1_000_000
     return DownloadSummary(total_bytes, average_ms, speed_mbps)
 
-def download_and_log(address: str) -> tuple[int, float]:
+def download_and_log(address: str) -> DownloadMeasurement:
     measurement = download_once(address)
-
-
-    
-    logger.info("Скачано {} байт за {:.3f} с", measurement.downloaded_bytes, measurement.elapsed_seconds)
-    return DownloadMeasurement(
-        downloaded_bytes=downloaded_bytes,
-        elapsed_seconds=perf_counter() - started_at,
+    logger.info(
+        "Скачано {} байт за {:.3f} с",
+        measurement.downloaded_bytes,
+        measurement.elapsed_seconds,
     )
+    return measurement
 
 
-def download_once(address: str) -> tuple[int, float]:
+def download_once(address: str) -> DownloadMeasurement:
     started_at = perf_counter()
     downloaded_bytes = 0
 
@@ -127,7 +125,10 @@ def download_once(address: str) -> tuple[int, float]:
             if downloaded_bytes != int(content_length):
                 raise OSError("Ответ получен не полностью.")
 
-        return downloaded_bytes, perf_counter() - started_at
+        return DownloadMeasurement(
+            downloaded_bytes=downloaded_bytes,
+            elapsed_seconds=perf_counter() - started_at,
+        )
 
 if __name__ == "__main__":
     raise SystemExit(main())
