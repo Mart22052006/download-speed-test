@@ -78,14 +78,16 @@ def validate_address(address: str) -> bool:
     return True
     
 def measure_downloads(address: str, download: Downloader) -> DownloadSummary:
-    measurement = download(address)
-    total_bytes += measurement.downloaded_bytes
-    total_seconds += measurement.elapsed_seconds
+    total_bytes = 0
+    total_seconds = 0.0
 
     for _ in range(REQUEST_COUNT):
-        downloaded_bytes, elapsed_seconds = download(address)
-        total_bytes += downloaded_bytes
-        total_seconds += elapsed_seconds
+        measurement = download(address)
+        total_bytes += measurement.downloaded_bytes
+        total_seconds += measurement.elapsed_seconds
+
+    if total_seconds <= 0:
+        raise ValueError("Суммарное время замера должно быть положительным.")
 
     average_ms = total_seconds * 1000 / REQUEST_COUNT
     speed_mbps = total_bytes * 8 / total_seconds / 1_000_000
