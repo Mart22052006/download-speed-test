@@ -1,11 +1,13 @@
 import sys
 from urllib.parse import urlsplit
+from loguru import logger
 from enum import Enum
 from http.client import IncompleteRead
 from urllib.request import urlopen
 from time import perf_counter
 
-#можно было енумчик сделать конечно, но это дорого, так что пускай текстовые константы просто будут в кортеже
+#можно было енумчики сделать конечно, но это дорого, так что пускай текстовые константы просто будут в массивах
+#TODO: добавить отдельный файл с текстовыми константами, разбить скрипт на модули. 
 """
 class url_scheme(Enum):
     HTTP = "http"
@@ -23,16 +25,24 @@ def main() -> int:
     except ValueError:
         url = None
 
-    if url is None or url.scheme not in URL_SCHEME or not url.hostname:
-        print("Укажите адрес HTTP или HTTPS", file = sys.stderr)
+    if url is None:
+        logger.error("Не удалось разобрать URL.")
         return 1
-    
+
+    if url.scheme not in URL_SCHEME:
+        logger.error("Допустимы только схемы HTTP и HTTPS.")
+        return 1
+
+    if not url.hostname:
+        logger.error("В URL отсутствует имя хоста.")
+        return 1
+
     try:
         for _ in range(10):
             downloaded_bytes, elapsed_seconds = download_once(address)
-            print(f"Скачано {downloaded_bytes} байт за {elapsed_seconds:.3f} с")
+            logger.info("Скачано {} байт за {:.3f} с", downloaded_bytes, elapsed_seconds)
     except (OSError, IncompleteRead) as error:
-        print("Ошибка скачивания!")
+        logger.error("Ошибка скачивания — {}", error)
         return 1
 
 def download_once(address: str) -> tuple[int, float]:
