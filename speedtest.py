@@ -26,7 +26,7 @@ REQUEST_COUNT = 10
 class DownloadMeasurement:
     downloaded_bytes: int
     elapsed_seconds: float
-    
+
 Downloader = Callable[[str], tuple[int, float]]
 
 
@@ -65,15 +65,17 @@ def validate_address(address: str) -> bool:
     
     if url is None:
         logger.error("Не удалось разобрать URL.")
-        return 1
+        return False
     
     if url.scheme not in URL_SCHEME:
         logger.error("Допустимы только схемы HTTP и HTTPS.")
-        return 1
+        return False
 
     if not url.hostname:
         logger.error("В URL отсутствует имя хоста.")
-        return 1
+        return False
+    
+    return True
     
 def measure_downloads(address: str, download: Downloader) -> DownloadSummary:
     measurement = download(address)
