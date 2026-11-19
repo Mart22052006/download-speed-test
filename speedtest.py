@@ -1,5 +1,4 @@
 import sys
-from http.client import IncompleteRead
 
 from loguru import logger
 
@@ -17,7 +16,7 @@ def main() -> int:
 
     try:
         summary = measure_downloads(address, download_and_log)
-    except (OSError, IncompleteRead, ValueError) as error:
+    except (OSError, ValueError) as error:
         logger.error(DOWNLOAD_ERROR_MESSAGE, error)
         return 1
 
